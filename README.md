@@ -1,5 +1,5 @@
 # opulent_schema
-opulent_schema is a tool to convert jsonschema to voluptuous (https://github.com/alecthomas/voluptuous) validators. In a sense, it is a jsonschema implementation in python, with a few extensions.
+opulent_schema is a tool to convert jsonschema to voluptuous (https://github.com/alecthomas/voluptuous) validators. In a sense, it is a jsonschema implementation in python, with some extensions.
 ## name
 In some dictionaries, "opulent" is a synonym of "voluptuous", hence the name.
 ## usage
