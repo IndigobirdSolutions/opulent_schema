@@ -39,3 +39,26 @@ returns
 }
 ```
 should the validation fail, an error will be raised
+
+* `exact_convert` - same as `convert`, but the returned callable will raise validation errors if dictionaries (json objects) in the validated instance contain keys not declared in `properties` or `required`, but only if `additionalProperties` is not defined
+* `check_and_convert` and `exact_check_and_convert` - first schecks the provided jsonschema with `schema_schema` and then returns the same validators as `convert` and `exact_convert`, respectively.
+
+## patterns
+opulent_schema interprets strings provided in `pattern` and `patternProperties` as python regexes, which is not entirely correct. We will see how to solve this problem in the future
+
+## additional transformations
+opulent_schema extends jsonschema by giving the user the ability to add additional, arbitrary validations and transformations. This is done by using subclasses of `TransformedFiled` (for example `InLineField`) in the input jsonschema. `TransformedField` is an abstract subsclass of `dict` with one method that needs to be defined: `_transform`. If any part of the input jsonschema is a `TransformedField`, after validating the instance the `_transform` method is called, with it as an argument, possibly raising an exception and returning a new instance value to use. An example would be timestamps stored in json as integers. In python code, one typically wants to deal with `dateitme.datetime` objects. Converting ints to `dateitme.datetime` after every validation would cause a lot repeated code. Here's how you can avoid that with `InLineField`:
+```python
+convert({
+    'type': 'object',
+    'properties': {
+        'timestamp': InLineField(datetime.datetime.fromtimestamp, **{'type': 'integer'}),
+    },
+})({
+    'timestamp': 4
+})
+```
+will return
+```python 
+datetime.datetime(1970, 1, 1, 0, 0, 4)
+```
