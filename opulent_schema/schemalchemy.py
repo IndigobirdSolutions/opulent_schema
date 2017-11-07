@@ -45,11 +45,15 @@ def calculate_reqs(schema):
         calculate_reqs(subschema)
 
 
-sql_type_validators = {
-    sa.dialects.postgresql.base.UUID: lambda: {
+def uuid_validator():
+    return {
         'type': 'string',
         'pattern': r'^[0-9,a-f]{8}-[0-9,a-f]{4}-[0-9,a-f]{4}-[0-9,a-f]{4}-[0-9,a-f]{12}$',
-    },
+    }
+
+
+sql_type_validators = {
+    sa.dialects.postgresql.base.UUID: uuid_validator,
     sa.dialects.postgresql.json.JSON: lambda: {},
     sa.sql.sqltypes.Numeric: lambda: InLineField(any_decimal, type='number'),
     sa.sql.sqltypes.TIME: lambda: {
