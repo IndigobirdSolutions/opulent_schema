@@ -3,5 +3,11 @@ from collections import OrderedDict
 schemas = OrderedDict()
 
 
-def add(name, schema):
-    schemas[name] = schema
+def add(*keys, schema):
+    dict_ = schemas
+    for key in keys[:-1]:
+        if key not in dict_:
+            dict_[key] = OrderedDict()
+        dict_ = dict_[key]
+
+    dict_[keys[-1]] = schema
