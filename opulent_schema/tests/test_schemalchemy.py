@@ -1,10 +1,14 @@
+import datetime
+import decimal
 import unittest
 
 import sqlalchemy
 import sqlalchemy.dialects
 import sqlalchemy.dialects.postgresql
+import sqlalchemy.sql.sqltypes
+import voluptuous as vol
 from sqlalchemy.ext.declarative import declarative_base
-from opulent_schema import schemalchemy, InLineField
+from opulent_schema import schemalchemy, InLineField, opulent_schema
 
 
 Base = declarative_base()
@@ -542,3 +546,72 @@ class Test(unittest.TestCase):
             title='hey ho!',
         )
         self.assertDictEqual(expected, res)
+
+    def test_any_decimal_pass(self):
+        res = opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.numeric))({'numeric': 1.05})
+        self.assertEqual(res, {'numeric': decimal.Decimal('1.05')})
+
+    def test_any_decimal_fail(self):
+        with self.assertRaises(vol.Invalid) as exception:
+            opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.numeric))({'numeric': 'a'})
+
+        self.assertEqual(str(exception.exception), "expected Number for dictionary value @ data['numeric']")
+
+    def test_any_time_stamp_number(self):
+        res = opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.timestamp))({'timestamp': 1.05})
+        self.assertEqual(res, {'timestamp': datetime.datetime(1970, 1, 1, second=1, microsecond=50000)})
+
+    def test_any_time_stamp_string(self):
+        res = opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.timestamp))(
+            {'timestamp': '2015-03-04 12:37:43.103'})
+        self.assertEqual(res, {'timestamp': datetime.datetime(
+            2015, month=3, day=4, hour=12, minute=37, second=43, microsecond=103000)})
+
+    def test_any_time_stamp_fail(self):
+        with self.assertRaises(vol.Invalid) as exception:
+            opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.timestamp))({'timestamp': 'a'})
+
+        self.assertEqual(str(exception.exception), "expected any_time_stamp for dictionary value @ data['timestamp']")
+
+    def test_any_date_number(self):
+        res = opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.date))({'date': 1.05})
+        self.assertEqual(res, {'date': datetime.date(1970, 1, 1)})
+
+    def test_any_date_string(self):
+        res = opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.date))(
+            {'date': '2015-03-04 12:37:43.103'})
+        self.assertEqual(res, {'date': datetime.date(2015, month=3, day=4)})
+
+    def test_any_date_fail(self):
+        with self.assertRaises(vol.Invalid) as exception:
+            opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.date))({'date': 'a'})
+
+        self.assertEqual(str(exception.exception), "expected any_date for dictionary value @ data['date']")
+
+    def test_supplied_validators(self):
+        sentry1 = {'a': object()}
+        sentry2 = {'b': object()}
+        res = schemalchemy.ContractMaker(
+            {sqlalchemy.sql.sqltypes.BOOLEAN: lambda: sentry1},
+            {str: lambda: sentry2},
+        ).make_contract(
+            schemalchemy.OptionalP(TestTableOrm.boolean, nullable=False),
+            schemalchemy.OptionalP(TestTableOrm.varchar, nullable=False),
+            schemalchemy.OptionalP(TestTableOrm.integer, nullable=False),
+            schemalchemy.OptionalP(TestTableOrm.uuid, nullable=False),
+        )
+        self.assertEqual(
+            res,
+            {
+                'type': 'object',
+                'properties': {
+                    'boolean': sentry1,
+                    'varchar': sentry2,
+                    'integer': {'type': 'integer'},
+                    'uuid': {
+                        'type': 'string',
+                        'pattern': r'^[0-9,a-f]{8}-[0-9,a-f]{4}-[0-9,a-f]{4}-[0-9,a-f]{4}-[0-9,a-f]{12}$',
+                    },
+                },
+            }
+        )
