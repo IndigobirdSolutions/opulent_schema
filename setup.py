@@ -17,7 +17,7 @@ setup(
         "voluptuous",    
     ],
     extra_require={
-        'extra': [
+        'schemalchemy': [
             'delorean',
             'sqlalchemy',
         ],    
