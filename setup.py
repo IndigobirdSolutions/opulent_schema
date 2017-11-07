@@ -16,7 +16,7 @@ setup(
     install_requires=[
         "voluptuous",    
     ],
-    extra_require={
+    extras_require={
         'schemalchemy': [
             'delorean',
             'sqlalchemy',
