@@ -14,11 +14,11 @@ setup(
     platforms=['any'],
     packages=['opulent_schema'],
     install_requires=[
-        "voluptuous",    
+        "voluptuous==0.9.3",    
     ],
     extras_require={
         'schemalchemy': [
-            'delorean',
+            'Delorean==0.5.0',
             'sqlalchemy',
         ],    
     },
