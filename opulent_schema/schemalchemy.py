@@ -27,7 +27,7 @@ class Required(str):
 def calculate_reqs(schema):
     if not isinstance(schema, dict):
         return
-    if (schema.get('type') == 'object') and ('properties' in schema):
+    if 'properties' in schema:
         new_reqs = set()
         for prop_name, prop_schema in schema['properties'].items():
             if not isinstance(prop_name, Optional):
