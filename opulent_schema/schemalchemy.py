@@ -34,7 +34,7 @@ def calculate_reqs(schema):
                 new_reqs.add(prop_name)
             calculate_reqs(prop_schema)
         if new_reqs:
-            schema['required'] = list(new_reqs | set(schema.get('required', [])))
+            schema['required'] = sorted(list(new_reqs | set(schema.get('required', []))))
 
     for subschema in itertools.chain(
         schema.get('anyOf', []),
