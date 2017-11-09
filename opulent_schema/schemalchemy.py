@@ -76,9 +76,9 @@ def any_decimal(value):
 
 
 def any_time_stamp(value):
-    if value == float('inf') or value == 'infinity':
+    if value == float('inf') or (isinstance(value, str) and value.lower() == 'infinity'):
         return 'infinity'
-    if value == float('-inf') or value == '-infinity':
+    if value == float('-inf') or (isinstance(value, str) and value.lower() == '-infinity'):
         return '-infinity'
 
     try:
