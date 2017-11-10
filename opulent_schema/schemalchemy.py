@@ -16,11 +16,21 @@ import sqlalchemy.sql.sqltypes
 sentry = object()
 
 
-class Optional(str):
+class AlmostStr(type):
+    """This metaclass is necessary, so that `voluptuous` will not distinguish `Optional` and `Required` classes defined
+    below from plain old strings"""
+    def __eq__(self, other):
+        return str == other
+
+    def __hash__(self):
+        return hash(str)
+
+
+class Optional(str, metaclass=AlmostStr):
     pass
 
 
-class Required(str):
+class Required(str, metaclass=AlmostStr):
     pass
 
 
