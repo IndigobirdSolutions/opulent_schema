@@ -8,7 +8,7 @@ import sqlalchemy.dialects.postgresql
 import sqlalchemy.sql.sqltypes
 import voluptuous as vol
 from sqlalchemy.ext.declarative import declarative_base
-from opulent_schema import schemalchemy, InLineField, opulent_schema
+from opulent_schema import schemalchemy, opulent_schema
 
 
 Base = declarative_base()
@@ -349,13 +349,11 @@ class Test(unittest.TestCase):
     def test_get_validator_timestamp(self):
         expected = {'type': ['null', 'string', 'number']}
         val = schemalchemy.get_validator(TestTable.columns['timestamp'])
-        self.assertIsInstance(val, InLineField)
-        self.assertEqual(val.transformation, schemalchemy.any_time_stamp)
+        self.assertIsInstance(val, schemalchemy.AnyTimeStamp)
         self.assertEqual(expected, val)
 
         val = schemalchemy.get_validator(TestTableOrm.timestamp)
-        self.assertIsInstance(val, InLineField)
-        self.assertEqual(val.transformation, schemalchemy.any_time_stamp)
+        self.assertIsInstance(val, schemalchemy.AnyTimeStamp)
         self.assertEqual(expected, val)
 
     def test_get_validator_json(self):
@@ -386,25 +384,21 @@ class Test(unittest.TestCase):
     def test_get_validator_numeric(self):
         expected = {'type': 'number'}
         val = schemalchemy.get_validator(TestTable.columns['numeric'])
-        self.assertIsInstance(val, InLineField)
-        self.assertEqual(val.transformation, schemalchemy.any_decimal)
+        self.assertIsInstance(val, schemalchemy.AnyDecimal)
         self.assertEqual(expected, val)
 
         val = schemalchemy.get_validator(TestTableOrm.numeric)
-        self.assertIsInstance(val, InLineField)
-        self.assertEqual(val.transformation, schemalchemy.any_decimal)
+        self.assertIsInstance(val, schemalchemy.AnyDecimal)
         self.assertEqual(expected, val)
 
     def test_get_validator_date(self):
         expected = {'type': ['string', 'number']}
         val = schemalchemy.get_validator(TestTable.columns['date'])
-        self.assertIsInstance(val, InLineField)
-        self.assertEqual(val.transformation, schemalchemy.any_date)
+        self.assertIsInstance(val, schemalchemy.AnyDate)
         self.assertEqual(expected, val)
 
         val = schemalchemy.get_validator(TestTableOrm.date)
-        self.assertIsInstance(val, InLineField)
-        self.assertEqual(val.transformation, schemalchemy.any_date)
+        self.assertIsInstance(val, schemalchemy.AnyDate)
         self.assertEqual(expected, val)
 
     def test_get_validator_varchar(self):
@@ -571,7 +565,7 @@ class Test(unittest.TestCase):
         with self.assertRaises(vol.Invalid) as exception:
             opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.timestamp))({'timestamp': 'a'})
 
-        self.assertEqual(str(exception.exception), "expected any_time_stamp for dictionary value @ data['timestamp']")
+        self.assertEqual(str(exception.exception), "expected AnyTimeStamp for dictionary value @ data['timestamp']")
 
     def test_any_date_number(self):
         res = opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.date))({'date': 1.05})
@@ -586,7 +580,7 @@ class Test(unittest.TestCase):
         with self.assertRaises(vol.Invalid) as exception:
             opulent_schema.check_and_convert(schemalchemy.make_contract(TestTableOrm.date))({'date': 'a'})
 
-        self.assertEqual(str(exception.exception), "expected any_date for dictionary value @ data['date']")
+        self.assertEqual(str(exception.exception), "expected AnyDate for dictionary value @ data['date']")
 
     def test_supplied_validators(self):
         sentry1 = {'a': object()}

@@ -775,14 +775,19 @@ class Test(unittest.TestCase):
     @mock.patch.object(opulent_schema.SchemaConverter, 'array_validators', side_effect=[['array_validators']] + [[]]*100)
     @patch_comparing_meths
     def test_go_idunno(self, array_validators, string_validators, number_validators, object_validators):
-        res = opulent_schema.SchemaConverter.go(opulent_schema.InLineField(str, **{
+
+        class ExampleTranfromedField(opulent_schema.TransformedField):
+            def _transform(self, instance):
+                pass
+        in_jsonschema = ExampleTranfromedField(**{
             'anyOf': [{'type': 'integer'}, {'type': 'number'}],
             'allOf': [{'type': 'string'}, {'type': 'object'}],
             'oneOf': [{'type': 'array'}, {'type': 'object'}],
             'const': 17,
             'enum': [5, None, {'a': 17}],
             'not': {'type': 'object'},
-        }))
+        })
+        res = opulent_schema.SchemaConverter.go(in_jsonschema)
         self.assertEqual(vol.All(
             'object_validators',
             'number_validators',
@@ -794,7 +799,7 @@ class Test(unittest.TestCase):
             opulent_schema.Equalizer(17),
             vol.In([5, None, {'a': 17}]),
             opulent_schema.Not(dict),
-            vol.Coerce(str)
+            vol.Coerce(in_jsonschema._transform),
         ), res)
 
     # integration tests:

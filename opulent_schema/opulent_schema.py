@@ -109,15 +109,19 @@ class OneOf:
         return 'OneOf({})'.format(", ".join(repr(v) for v in self.validators))
 
 
-class ExtendedExactSequence(vol.ExactSequence):
+class ExtendedExactSequence:
+    def __init__(self, validators):
+        self.validators = validators
+        self._schemas = [vol.Schema(val) for val in validators]
+
     def __call__(self, v):
-        ret = super().__call__(v)
-        if len(ret) < len(v):
-            return ret + v[len(ret):]
+        ret = v.copy()
+        for ind in range(min(len(self._schemas), len(v))):
+            ret[ind] = (self._schemas[ind](v[ind]))
         return ret
 
     def __repr__(self):
-        return 'Extended' + super().__repr__()
+        return 'ExtendedExactSequence({})'.format(self.validators)
 
 
 class FullPropertiesSchema:
@@ -292,7 +296,7 @@ class SchemaConverter:
             validators.append(cls.not_(cls.go(schema['not'])))
 
         if isinstance(schema, TransformedField):
-            validators.append(vol.Coerce(schema.get_transformation()))
+            validators.append(vol.Coerce(schema.get_transformation(), msg='expected {}'.format(type(schema).__name__)))
         if not validators:
             validators = [object]
 

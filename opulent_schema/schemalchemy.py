@@ -4,7 +4,7 @@ import itertools
 from typing import Union, Tuple
 
 import delorean
-from opulent_schema import InLineField
+from opulent_schema import TransformedField
 
 import sqlalchemy as sa
 import sqlalchemy.orm
@@ -62,29 +62,6 @@ def uuid_validator():
     }
 
 
-sql_type_validators = {
-    sa.dialects.postgresql.base.UUID: uuid_validator,
-    sa.dialects.postgresql.json.JSON: lambda: {},
-    sa.sql.sqltypes.Numeric: lambda: InLineField(any_decimal, type='number'),
-    sa.sql.sqltypes.TIME: lambda: {
-        'type': 'string',
-        'pattern': r'^[0-2]?\d:[0-5]\d:[0-5]\d(.\d+)?$',
-    },
-    sa.sql.sqltypes.BOOLEAN: lambda: {'type': 'boolean'},
-}
-
-python_type_validators = {
-    int: lambda: {'type': 'integer'},
-    str: lambda: {'type': 'string'},
-    datetime.datetime: lambda: InLineField(any_time_stamp, type=['string', 'number']),
-    datetime.date: lambda: InLineField(any_date, type=['string', 'number']),
-}
-
-
-def any_decimal(value):
-    return decimal.Decimal(str(value))
-
-
 def any_time_stamp(value):
     if value == float('inf') or (isinstance(value, str) and value.lower() == 'infinity'):
         return 'infinity'
@@ -92,16 +69,46 @@ def any_time_stamp(value):
         return '-infinity'
 
     try:
-        return delorean.epoch(float(value)).naive()
+        return delorean.epoch(float(value)).shift('UTC')._dt.replace(tzinfo=None)
     except ValueError:
         pass
 
-    return delorean.parse(value, dayfirst=False).naive()
+    return delorean.parse(value, dayfirst=False).shift('UTC')._dt.replace(tzinfo=None)
 
 
-def any_date(value):
-    return any_time_stamp(value).date()
+class AnyTimeStamp(TransformedField):
+    def _transform(self, instance):
+        return any_time_stamp(instance)
 
+
+class AnyDate(TransformedField):
+    def _transform(self, instance):
+        return any_time_stamp(instance).date()
+
+
+class AnyDecimal(TransformedField):
+    def _transform(self, instance):
+        return decimal.Decimal(str(instance))
+
+
+sql_type_validators = {
+    sa.dialects.postgresql.base.UUID: uuid_validator,
+    sa.dialects.postgresql.json.JSON: lambda: {},
+    sa.sql.sqltypes.Numeric: lambda: AnyDecimal(type='number'),
+    sa.sql.sqltypes.TIME: lambda: {
+        'type': 'string',
+        'pattern': r'^[0-2]?\d:[0-5]\d:[0-5]\d(.\d+)?$',
+    },
+    sa.sql.sqltypes.BOOLEAN: lambda: {'type': 'boolean'},
+}
+
+
+python_type_validators = {
+    int: lambda: {'type': 'integer'},
+    str: lambda: {'type': 'string'},
+    datetime.datetime: lambda: AnyTimeStamp(type=['string', 'number']),
+    datetime.date: lambda: AnyDate(type=['string', 'number']),
+}
 
 sa_columns = Union[sa.Column, sa.orm.attributes.InstrumentedAttribute]
 
