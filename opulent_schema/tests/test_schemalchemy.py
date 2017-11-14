@@ -35,6 +35,7 @@ class TestTableOrm(Base):
     varchar = sqlalchemy.Column(sqlalchemy.VARCHAR(), nullable=False)
     varchar_len = sqlalchemy.Column(sqlalchemy.VARCHAR(67), nullable=False)
     enum_ = sqlalchemy.Column(sqlalchemy.Enum(SomeEnum), nullable=False)
+    enum_nullable = sqlalchemy.Column(sqlalchemy.Enum(SomeEnum), nullable=True)
 
 
 TestTable = sqlalchemy.Table(
@@ -49,7 +50,8 @@ TestTable = sqlalchemy.Table(
     sqlalchemy.Column('date', sqlalchemy.DATE, nullable=False),
     sqlalchemy.Column('varchar', sqlalchemy.VARCHAR(), nullable=False),
     sqlalchemy.Column('varchar_len', sqlalchemy.VARCHAR(67), nullable=False),
-    sqlalchemy.Column('enum_', sqlalchemy.Enum(SomeEnum), nullable=False)
+    sqlalchemy.Column('enum_', sqlalchemy.Enum(SomeEnum), nullable=False),
+    sqlalchemy.Column('enum_nullable', sqlalchemy.Enum(SomeEnum), nullable=True),
 )
 
 
@@ -432,6 +434,14 @@ class Test(unittest.TestCase):
         val = schemalchemy.get_validator(TestTableOrm.enum_)
         self.assertEqual(expected, val)
 
+    def test_get_validator_enum_nullable(self):
+        expected = {'anyOf': [{'type': 'null'}, {'enum': [1, 2, 3]}]}
+        val = schemalchemy.get_validator(TestTable.columns['enum_nullable'])
+        self.assertEqual(expected, val)
+
+        val = schemalchemy.get_validator(TestTableOrm.enum_nullable)
+        self.assertEqual(expected, val)
+
     def test_get_validator_bool_properties(self):
         expected = {'type': 'boolean', 'title': 'title', 'examples': [True, False]}
         val = schemalchemy.get_validator(schemalchemy.RequiredP(TestTable.columns['boolean'], title='title',
@@ -514,7 +524,8 @@ class Test(unittest.TestCase):
                 'date': {'type': ['string', 'number']},
                 'varchar': {'type': 'string'},
                 'varchar_len': {'type': 'string', 'maxLength': 67},
-                'enum_': {'enum': [1, 2, 3]}
+                'enum_': {'enum': [1, 2, 3]},
+                'enum_nullable': {'anyOf': [{'type': 'null'}, {'enum': [1, 2, 3]}]},
             },
             'required': SetListComparator([
                 'integer',
@@ -526,6 +537,7 @@ class Test(unittest.TestCase):
                 'varchar',
                 'varchar_len',
                 'enum_',
+                'enum_nullable',
             ]),
         }
         res = schemalchemy.make_contract(
@@ -540,6 +552,7 @@ class Test(unittest.TestCase):
             TestTableOrm.varchar,
             TestTableOrm.varchar_len,
             TestTableOrm.enum_,
+            TestTableOrm.enum_nullable,
             title='hey ho!',
         )
         self.assertDictEqual(expected, res)
@@ -556,6 +569,7 @@ class Test(unittest.TestCase):
             TestTable.columns['varchar'],
             TestTable.columns['varchar_len'],
             TestTable.columns['enum_'],
+            TestTable.columns['enum_nullable'],
             title='hey ho!',
         )
         self.assertDictEqual(expected, res)
