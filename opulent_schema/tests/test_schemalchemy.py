@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import enum
 import unittest
 
 import sqlalchemy
@@ -12,6 +13,12 @@ from opulent_schema import schemalchemy, opulent_schema
 
 
 Base = declarative_base()
+
+
+class SomeEnum(enum.IntEnum):
+    one = 1
+    two = 2
+    three = 3
 
 
 class TestTableOrm(Base):
@@ -27,9 +34,8 @@ class TestTableOrm(Base):
     date = sqlalchemy.Column(sqlalchemy.DATE, nullable=False)
     varchar = sqlalchemy.Column(sqlalchemy.VARCHAR(), nullable=False)
     varchar_len = sqlalchemy.Column(sqlalchemy.VARCHAR(67), nullable=False)
+    enum_ = sqlalchemy.Column(sqlalchemy.Enum(SomeEnum), nullable=False)
 
-
-metadata = sqlalchemy.MetaData()
 
 TestTable = sqlalchemy.Table(
     'test_table', sqlalchemy.MetaData(),
@@ -43,6 +49,7 @@ TestTable = sqlalchemy.Table(
     sqlalchemy.Column('date', sqlalchemy.DATE, nullable=False),
     sqlalchemy.Column('varchar', sqlalchemy.VARCHAR(), nullable=False),
     sqlalchemy.Column('varchar_len', sqlalchemy.VARCHAR(67), nullable=False),
+    sqlalchemy.Column('enum_', sqlalchemy.Enum(SomeEnum), nullable=False)
 )
 
 
@@ -417,6 +424,14 @@ class Test(unittest.TestCase):
         val = schemalchemy.get_validator(TestTableOrm.varchar_len)
         self.assertEqual(expected, val)
 
+    def test_get_validator_enum(self):
+        expected = {'enum': [1, 2, 3]}
+        val = schemalchemy.get_validator(TestTable.columns['enum_'])
+        self.assertEqual(expected, val)
+
+        val = schemalchemy.get_validator(TestTableOrm.enum_)
+        self.assertEqual(expected, val)
+
     def test_get_validator_bool_properties(self):
         expected = {'type': 'boolean', 'title': 'title', 'examples': [True, False]}
         val = schemalchemy.get_validator(schemalchemy.RequiredP(TestTable.columns['boolean'], title='title',
@@ -477,7 +492,7 @@ class Test(unittest.TestCase):
                                                                 examples=[True, False], nullable=False))
         self.assertEqual(expected, val)
 
-    def test_make_contract_orm(self):
+    def test_make_contract(self):
         self.maxDiff = None
         expected = {
             'title': 'hey ho!',
@@ -499,6 +514,7 @@ class Test(unittest.TestCase):
                 'date': {'type': ['string', 'number']},
                 'varchar': {'type': 'string'},
                 'varchar_len': {'type': 'string', 'maxLength': 67},
+                'enum_': {'enum': [1, 2, 3]}
             },
             'required': SetListComparator([
                 'integer',
@@ -509,6 +525,7 @@ class Test(unittest.TestCase):
                 'date',
                 'varchar',
                 'varchar_len',
+                'enum_',
             ]),
         }
         res = schemalchemy.make_contract(
@@ -522,6 +539,7 @@ class Test(unittest.TestCase):
             TestTableOrm.date,
             TestTableOrm.varchar,
             TestTableOrm.varchar_len,
+            TestTableOrm.enum_,
             title='hey ho!',
         )
         self.assertDictEqual(expected, res)
@@ -537,6 +555,7 @@ class Test(unittest.TestCase):
             TestTable.columns['date'],
             TestTable.columns['varchar'],
             TestTable.columns['varchar_len'],
+            TestTable.columns['enum_'],
             title='hey ho!',
         )
         self.assertDictEqual(expected, res)
@@ -586,8 +605,8 @@ class Test(unittest.TestCase):
         sentry1 = {'a': object()}
         sentry2 = {'b': object()}
         res = schemalchemy.ContractMaker(
-            {sqlalchemy.sql.sqltypes.BOOLEAN: lambda: sentry1},
-            {str: lambda: sentry2},
+            {sqlalchemy.sql.sqltypes.BOOLEAN: lambda col: sentry1},
+            {str: lambda col: sentry2},
         ).make_contract(
             schemalchemy.OptionalP(TestTableOrm.boolean, nullable=False),
             schemalchemy.OptionalP(TestTableOrm.varchar, nullable=False),

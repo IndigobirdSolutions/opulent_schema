@@ -55,7 +55,7 @@ def calculate_reqs(schema):
         calculate_reqs(subschema)
 
 
-def uuid_validator():
+def uuid_validator(*a):
     return {
         'type': 'string',
         'pattern': r'^[0-9,a-f]{8}-[0-9,a-f]{4}-[0-9,a-f]{4}-[0-9,a-f]{4}-[0-9,a-f]{12}$',
@@ -93,21 +93,29 @@ class AnyDecimal(TransformedField):
 
 sql_type_validators = {
     sa.dialects.postgresql.base.UUID: uuid_validator,
-    sa.dialects.postgresql.json.JSON: lambda: {},
-    sa.sql.sqltypes.Numeric: lambda: AnyDecimal(type='number'),
-    sa.sql.sqltypes.TIME: lambda: {
+    sa.dialects.postgresql.json.JSON: lambda col: {},
+    sa.sql.sqltypes.Numeric: lambda col: AnyDecimal(type='number'),
+    sa.sql.sqltypes.TIME: lambda col: {
         'type': 'string',
         'pattern': r'^[0-2]?\d:[0-5]\d:[0-5]\d(.\d+)?$',
     },
-    sa.sql.sqltypes.BOOLEAN: lambda: {'type': 'boolean'},
+    sa.sql.sqltypes.BOOLEAN: lambda col: {'type': 'boolean'},
+    sqlalchemy.sql.sqltypes.Enum: lambda col: {'enum': [el.value for el in col.type.python_type]},
 }
 
 
+def str_validator(col):
+    validator = {'type': 'string'}
+    if hasattr(col.type, 'length') and col.type.length is not None:
+        validator['maxLength'] = col.type.length
+    return validator
+
+
 python_type_validators = {
-    int: lambda: {'type': 'integer'},
-    str: lambda: {'type': 'string'},
-    datetime.datetime: lambda: AnyTimeStamp(type=['string', 'number']),
-    datetime.date: lambda: AnyDate(type=['string', 'number']),
+    int: lambda col: {'type': 'integer'},
+    str: str_validator,
+    datetime.datetime: lambda col: AnyTimeStamp(type=['string', 'number']),
+    datetime.date: lambda col: AnyDate(type=['string', 'number']),
 }
 
 sa_columns = Union[sa.Column, sa.orm.attributes.InstrumentedAttribute]
@@ -140,9 +148,9 @@ class ContractMaker:
         sql_type = column.type
         try:
             if type(sql_type) in self.sql_type_validators_:
-                validator = self.sql_type_validators_[type(sql_type)]()
+                validator = self.sql_type_validators_[type(sql_type)](column)
             elif sql_type.python_type in self.python_type_validators_:
-                validator = self.python_type_validators_[sql_type.python_type]()
+                validator = self.python_type_validators_[sql_type.python_type](column)
             else:
                 raise Exception('Unsupported column type: {}'.format(type(sql_type)))
         except NotImplementedError:
@@ -162,9 +170,6 @@ class ContractMaker:
                         validator['type'] = ['null'] + validator['type']
             else:
                 validator = {'anyOf': [{'type': 'null'}, validator]}
-
-        if hasattr(sql_type, 'length') and sql_type.length is not None:
-            validator['maxLength'] = sql_type.length
 
         validator.update(schema_info)
 
