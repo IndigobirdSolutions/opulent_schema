@@ -1,16 +1,16 @@
+import collections
 import datetime
 import decimal
 import itertools
-from typing import Union, Tuple
+from typing import Union
 
 import delorean
-from opulent_schema import TransformedField
+from opulent_schema import TransformedField, sorted_dict_items
 
 import sqlalchemy as sa
 import sqlalchemy.orm
 import sqlalchemy.orm.attributes
 import sqlalchemy.dialects
-import sqlalchemy.dialects.postgresql
 import sqlalchemy.sql.sqltypes
 
 sentry = object()
@@ -38,13 +38,14 @@ def calculate_reqs(schema):
     if not isinstance(schema, dict):
         return
     if 'properties' in schema:
-        new_reqs = set()
-        for prop_name, prop_schema in schema['properties'].items():
+        new_reqs = collections.OrderedDict.fromkeys(schema.get('required', []))  # we are using this as an OrderedSet,
+        # so all values are None and are irrelevant
+        for prop_name, prop_schema in sorted_dict_items(schema['properties']):
             if not isinstance(prop_name, Optional):
-                new_reqs.add(prop_name)
+                new_reqs[prop_name] = None
             calculate_reqs(prop_schema)
         if new_reqs:
-            schema['required'] = sorted(list(new_reqs | set(schema.get('required', []))))
+            schema['required'] = list(new_reqs.keys())
 
     for subschema in itertools.chain(
         schema.get('anyOf', []),
@@ -128,11 +129,17 @@ class ContractMaker:
         self.python_type_validators_ = {**python_type_validators, **(python_type_validators_ or {})}
 
     def make_contract(self, *columns: Union[sa_columns, 'Properties'], type_='object', add_props=None, **top_schema_info):
-        contract = {'type': type_, 'properties': add_props or {}}
+        properties = collections.OrderedDict()
         for col in columns:
             # if the column is wrapped in OptionalP, then make it optional, otherwise make it required
             key = col.name if getattr(col, 'required', True) else Optional(col.name)
-            contract['properties'][key] = self.get_validator(col)
+            properties[key] = self.get_validator(col)
+
+        if add_props:
+            for key, value in sorted_dict_items(add_props):
+                properties[key] = value
+
+        contract = {'type': type_, 'properties': properties}
 
         calculate_reqs(contract)
         return {**contract, **top_schema_info}
