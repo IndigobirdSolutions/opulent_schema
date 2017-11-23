@@ -144,6 +144,19 @@ class ContractMaker:
         calculate_reqs(contract)
         return {**contract, **top_schema_info}
 
+    def _determine_validator(self, column):
+        sql_type = column.type
+        try:
+            for type_ in type(sql_type).__mro__:
+                if type_ in self.sql_type_validators_:
+                    return self.sql_type_validators_[type_](column)
+            for type_ in sql_type.python_type.__mro__:
+                if type_ in self.python_type_validators_:
+                    return self.python_type_validators_[type_](column)
+        except NotImplementedError:
+            pass
+        raise Exception('Unsupported column type: {}'.format(type(sql_type)))
+
     def get_validator(self, column: Union[sa_columns, 'Properties']):
 
         nullable = column.nullable
@@ -152,16 +165,8 @@ class ContractMaker:
             column = column.column
         else:
             schema_info = {}
-        sql_type = column.type
-        try:
-            if type(sql_type) in self.sql_type_validators_:
-                validator = self.sql_type_validators_[type(sql_type)](column)
-            elif sql_type.python_type in self.python_type_validators_:
-                validator = self.python_type_validators_[sql_type.python_type](column)
-            else:
-                raise Exception('Unsupported column type: {}'.format(type(sql_type)))
-        except NotImplementedError:
-            raise Exception('Unsupported column type: {}'.format(type(sql_type)))
+
+        validator = self._determine_validator(column)
 
         if nullable:
             if 'type' in validator:

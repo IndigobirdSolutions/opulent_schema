@@ -31,6 +31,8 @@ class TestTableOrm(Base):
     boolean = sqlalchemy.Column(sqlalchemy.BOOLEAN, nullable=False)
     time = sqlalchemy.Column(sqlalchemy.TIME, nullable=False)
     numeric = sqlalchemy.Column(sqlalchemy.Numeric(20, 6), nullable=False)
+    numeric_capital = sqlalchemy.Column(sqlalchemy.NUMERIC(20, 6), nullable=False)
+    decimal = sqlalchemy.Column(sqlalchemy.DECIMAL(20, 6), nullable=False)
     date = sqlalchemy.Column(sqlalchemy.DATE, nullable=False)
     varchar = sqlalchemy.Column(sqlalchemy.VARCHAR(), nullable=False)
     varchar_len = sqlalchemy.Column(sqlalchemy.VARCHAR(67), nullable=False)
@@ -47,6 +49,8 @@ TestTable = sqlalchemy.Table(
     sqlalchemy.Column('boolean', sqlalchemy.BOOLEAN, nullable=False),
     sqlalchemy.Column('time', sqlalchemy.TIME, nullable=False),
     sqlalchemy.Column('numeric', sqlalchemy.Numeric(20, 6), nullable=False),
+    sqlalchemy.Column('numeric_capital', sqlalchemy.NUMERIC(20, 6), nullable=False),
+    sqlalchemy.Column('decimal', sqlalchemy.DECIMAL(20, 6), nullable=False),
     sqlalchemy.Column('date', sqlalchemy.DATE, nullable=False),
     sqlalchemy.Column('varchar', sqlalchemy.VARCHAR(), nullable=False),
     sqlalchemy.Column('varchar_len', sqlalchemy.VARCHAR(67), nullable=False),
@@ -397,6 +401,26 @@ class Test(unittest.TestCase):
         self.assertEqual(expected, val)
 
         val = schemalchemy.get_validator(TestTableOrm.numeric)
+        self.assertIsInstance(val, schemalchemy.AnyDecimal)
+        self.assertEqual(expected, val)
+
+    def test_get_validator_numeric_capital(self):
+        expected = {'type': 'number'}
+        val = schemalchemy.get_validator(TestTable.columns['numeric_capital'])
+        self.assertIsInstance(val, schemalchemy.AnyDecimal)
+        self.assertEqual(expected, val)
+
+        val = schemalchemy.get_validator(TestTableOrm.numeric_capital)
+        self.assertIsInstance(val, schemalchemy.AnyDecimal)
+        self.assertEqual(expected, val)
+
+    def test_get_validator_decimal(self):
+        expected = {'type': 'number'}
+        val = schemalchemy.get_validator(TestTable.columns['decimal'])
+        self.assertIsInstance(val, schemalchemy.AnyDecimal)
+        self.assertEqual(expected, val)
+
+        val = schemalchemy.get_validator(TestTableOrm.decimal)
         self.assertIsInstance(val, schemalchemy.AnyDecimal)
         self.assertEqual(expected, val)
 
