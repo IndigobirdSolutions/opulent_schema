@@ -11,6 +11,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm
 import sqlalchemy.orm.attributes
 import sqlalchemy.dialects
+import sqlalchemy.dialects.postgresql
 import sqlalchemy.sql.sqltypes
 
 sentry = object()
