@@ -129,7 +129,8 @@ class ContractMaker:
         self.sql_type_validators_ = {**sql_type_validators, **(sql_type_validators_ or {})}
         self.python_type_validators_ = {**python_type_validators, **(python_type_validators_ or {})}
 
-    def make_contract(self, *columns: Union[sa_columns, 'Properties'], type_='object', add_props=None, **top_schema_info):
+    def make_contract(self, *columns: Union[sa_columns, 'Properties'], type_='object', add_props=None,
+                      **top_schema_info):
         properties = collections.OrderedDict()
         for col in columns:
             # if the column is wrapped in OptionalP, then make it optional, otherwise make it required

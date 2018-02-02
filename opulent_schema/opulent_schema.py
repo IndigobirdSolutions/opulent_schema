@@ -6,6 +6,7 @@ import re
 from typing import Dict, Callable, Container
 
 import voluptuous as vol
+from opulent_schema import ext_validators
 
 
 class IntegralNumber:
@@ -53,7 +54,7 @@ class Equalizer:
         try:
             if self.expected == v:
                 return v
-        except:
+        except Exception:
             pass
         raise vol.Invalid('Value not equal to: {}'.format(self.expected))
 
@@ -262,7 +263,8 @@ class SchemaConverter:
 
     @classmethod
     def go(cls, schema):
-        # check with http://json-schema.org/latest/json-schema-validation.html#rfc.section.6.8 to see if python regex is fine here
+        # check with http://json-schema.org/latest/json-schema-validation.html#rfc.section.6.8
+        # to see if python regex is fine here
         if not isinstance(schema, dict):
             return
         validators = []
@@ -389,13 +391,15 @@ class SchemaConverter:
 
     @classmethod
     def string_validators(cls, schema):
-        if not {'maxLength', 'minLength', 'pattern'} & schema.keys():
+        if not {'maxLength', 'minLength', 'pattern', 'format'} & schema.keys():
             return []
         validators = []
         validators.extend(cls.get_length(schema.get('minLength'), schema.get('maxLength')))
 
         if 'pattern' in schema:
             validators.append(vol.Match(schema['pattern']))
+        if 'format' in schema:
+            validators.append(cls._get_format_validator(schema['format']))
 
         if not is_type(schema, 'string'):
             return [vol.Any(vol.All(str, *validators), cls.not_(str))]
@@ -431,6 +435,20 @@ class SchemaConverter:
         if min_ is not None or max_ is not None:
             return [vol.Length(min=min_, max=max_)]
         return []
+
+    @classmethod
+    def _get_format_validator(cls, format):
+        return {
+            'date-time': vol.Datetime(),
+            'date': vol.Date(),
+            'time': vol.Datetime(format='%H:%M:%S.%fZ'),
+            'email': vol.Email(),
+            'hostname': ext_validators.Hostname(),
+            'ipv4': ext_validators.IP(4),
+            'ipv6': ext_validators.IP(6),
+            # regex from: https://tools.ietf.org/html/rfc3986#appendix-B
+            'uri': vol.Match('^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?'),
+        }.get(format, object)
 
 
 class ExactSchemaConverter(SchemaConverter):
@@ -487,6 +505,7 @@ def make_schema_schema(extra):
         vol.Optional('maxLength'): numbers.Number,
         vol.Optional('minLength'): numbers.Number,
         vol.Optional('pattern'): str,
+        vol.Optional('format'): str,
         vol.Optional('items'): vol.Any([schema_within_schema], schema_within_schema),
         vol.Optional('additionalItems'): schema_within_schema,
         vol.Optional('maxItems'): numbers.Number,

@@ -222,8 +222,8 @@ class Test(unittest.TestCase):
     @patch_comparing_meths
     def test_number_validators_both_ends_with_type(self):
         res = opulent_schema.SchemaConverter.number_validators(
-            example_schema({'maximum': 5, 'exclusiveMaximum': 5, 'minimum': 3, 'exclusiveMinimum': 3, 'type': 'integer'},
-                           leave_out=['multipleOf']))
+            example_schema({'maximum': 5, 'exclusiveMaximum': 5, 'minimum': 3, 'exclusiveMinimum': 3,
+                            'type': 'integer'}, leave_out=['multipleOf']))
 
         self.assertEqual([vol.Range(min=3, min_included=False, max=5, max_included=False)], res)
 
@@ -769,10 +769,14 @@ class Test(unittest.TestCase):
         })
         self.assertEqual(res, vol.Any(dict, str))
 
-    @mock.patch.object(opulent_schema.SchemaConverter, 'object_validators', side_effect=[['object_validators']] + [[]]*100)
-    @mock.patch.object(opulent_schema.SchemaConverter, 'number_validators', side_effect=[['number_validators']] + [[]]*100)
-    @mock.patch.object(opulent_schema.SchemaConverter, 'string_validators', side_effect=[['string_validators']] + [[]]*100)
-    @mock.patch.object(opulent_schema.SchemaConverter, 'array_validators', side_effect=[['array_validators']] + [[]]*100)
+    @mock.patch.object(opulent_schema.SchemaConverter, 'object_validators',
+                       side_effect=[['object_validators']] + [[]]*100)
+    @mock.patch.object(opulent_schema.SchemaConverter, 'number_validators',
+                       side_effect=[['number_validators']] + [[]]*100)
+    @mock.patch.object(opulent_schema.SchemaConverter, 'string_validators',
+                       side_effect=[['string_validators']] + [[]]*100)
+    @mock.patch.object(opulent_schema.SchemaConverter, 'array_validators',
+                       side_effect=[['array_validators']] + [[]]*100)
     @patch_comparing_meths
     def test_go_idunno(self, array_validators, string_validators, number_validators, object_validators):
 
@@ -1008,3 +1012,145 @@ class Test(unittest.TestCase):
         with self.assertRaises(vol.Invalid):
             opulent_schema.check_and_convert(self._everything_except(
                 'allOf', 'oneOf', 'anyOf', 'enum', 'const', 'type'))(['a', 1])
+
+    format_testing_schema = {
+        'type': 'object',
+        'properties': {
+            'datetime': {
+                'type': 'string',
+                'format': 'date-time',
+            },
+            'date': {
+                'type': 'string',
+                'format': 'date',
+            },
+            'time': {
+                'type': 'string',
+                'format': 'time',
+            },
+            'email': {
+                'type': 'string',
+                'format': 'email',
+            },
+            'hostname': {
+                'type': 'string',
+                'format': 'hostname',
+            },
+            'ipv4': {
+                'type': 'string',
+                'format': 'ipv4',
+            },
+            'ipv6': {
+                'type': 'string',
+                'format': 'ipv6',
+            },
+            'uri': {
+                'type': 'string',
+                'format': 'uri',
+            }
+        }
+    }
+
+    def test_format_datetime(self):
+        self.assertEqual(
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'datetime': '2012-01-02T12:12:32.99Z'
+            }),
+            {
+                'datetime': '2012-01-02T12:12:32.99Z'
+            }
+        )
+
+    def test_format_date(self):
+        self.assertEqual(
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'date': '2012-01-02'
+            }),
+            {
+                'date': '2012-01-02'
+            }
+        )
+
+    def test_format_time(self):
+        self.assertEqual(
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'time': '12:12:32.99Z'
+            }),
+            {
+                'time': '12:12:32.99Z'
+            }
+        )
+
+    def test_format_email(self):
+        self.assertEqual(
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'email': 'test@example.com'
+            }),
+            {
+                'email': 'test@example.com'
+            }
+        )
+
+    def test_format_email_wrong(self):
+        with self.assertRaises(vol.Invalid):
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'email': 'testaxample.com'
+            })
+
+    def test_format_hostname(self):
+        self.assertEqual(
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'hostname': 'example.com'
+            }),
+            {
+                'hostname': 'example.com'
+            }
+        )
+
+    def test_format_hostname_wrong(self):
+        with self.assertRaises(vol.Invalid):
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'hostname': 'testaxamp/asd'
+            })
+
+    def test_format_ipv4(self):
+        self.assertEqual(
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'ipv4': '1.2.3.4'
+            }),
+            {
+                'ipv4': '1.2.3.4'
+            }
+        )
+
+    def test_format_ipv4_wrong(self):
+        with self.assertRaises(vol.Invalid):
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'hostname': '257.0.0.21'
+            })
+
+    def test_format_ipv6(self):
+        self.assertEqual(
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'ipv6': '2001:db8:a0b:12f0::1'
+            }),
+            {
+                'ipv6': '2001:db8:a0b:12f0::1'
+            }
+        )
+
+    def test_format_ipv6_wrong(self):
+        with self.assertRaises(vol.Invalid):
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'ipv6': 'xxx'
+            })
+
+    def test_format_uri(self):
+        self.assertEqual(
+            opulent_schema.exact_check_and_convert(self.format_testing_schema)({
+                'uri': 'ftp://ftp.wikipedia.org'
+            }),
+            {
+                'uri': 'ftp://ftp.wikipedia.org'
+            }
+        )

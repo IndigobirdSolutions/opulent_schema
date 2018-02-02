@@ -78,7 +78,7 @@ class SetListComparator:
 
 class Test(unittest.TestCase):
     def test(self):
-        self.maxDiff=None
+        self.maxDiff = None
         in_schema = {
             'type': 'object',
             'properties': {

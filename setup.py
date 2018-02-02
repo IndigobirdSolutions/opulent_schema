@@ -1,7 +1,3 @@
-import sys
-import os
-import atexit
-
 from setuptools import setup
 
 version = "0.1.0"
@@ -12,6 +8,7 @@ setup(
     version=version,
     license='BSD',
     platforms=['any'],
+    python_requires=">=3.5",
     packages=['opulent_schema'],
     install_requires=[
         "voluptuous>=0.9.3",
@@ -20,6 +17,6 @@ setup(
         'schemalchemy': [
             'Delorean>=0.5.0',
             'sqlalchemy',
-        ],    
+        ],
     },
 )

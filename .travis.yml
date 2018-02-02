@@ -1,0 +1,11 @@
+language: python
+python:
+  - 3.5
+  - 3.6
+  - pypy3
+install:
+  - pip install -r test-requirements.txt
+  - pip install -e .[schemalchemy]
+script:
+  - flake8
+  - nosetests
