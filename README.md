@@ -1,5 +1,5 @@
 # opulent_schema
-[![Build Status](https://travis-ci.org/4SmartIT/opulent_schema.svg?branch=master)](https://travis-ci.org/4SmartIT/opulent_schema)
+[![Build Status](https://travis-ci.org/IndigobirdSolutions/opulent_schema.svg?branch=master)](https://travis-ci.org/IndigobirdSolutions/opulent_schema)
 
 opulent_schema is primarily a tool to convert jsonschema to voluptuous (https://github.com/alecthomas/voluptuous) validators. In a sense, it is a jsonschema implementation in python, with some extensions.
 Secondarily it provides tools to generate jsonschema from sqlalchemy columns. To use that functionality, you need to install sqlachemy and Delorean (provided by `schemalchemy` extra requirements of this package)
