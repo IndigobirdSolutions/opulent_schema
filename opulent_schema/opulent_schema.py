@@ -344,11 +344,13 @@ class SchemaConverter:
                     dict.fromkeys(dict_schema.keys() | {vol.Match(p) for p in schema['patternProperties']}, object),
                     extra=vol.PREVENT_EXTRA
                 ))
-            validators.append(vol.Schema(dict_schema, extra=vol.ALLOW_EXTRA))
+            if dict_schema:
+                validators.append(vol.Schema(dict_schema, extra=vol.ALLOW_EXTRA))
             for prop_pattern, prop_schema in sorted_dict_items(schema['patternProperties']):
                 validators.append(vol.Schema({vol.Match(prop_pattern): cls.go(prop_schema)}, extra=vol.ALLOW_EXTRA))
         else:  # just the 'properties'
-            validators.append(vol.Schema(dict_schema, extra=cls.extra))
+            if dict_schema:
+                validators.append(vol.Schema(dict_schema, extra=cls.extra))
 
         for dep_key, dep_schema in sorted_dict_items(schema.get('dependencies', {})):
             if isinstance(dep_schema, list):
