@@ -239,6 +239,18 @@ class ListSchema:
         return 'ListSchema({}, start={})'.format(self._schema, self.start)
 
 
+class LazySchema:
+    def __init__(self, converter, json_schema):
+        self.converted = None
+        self.converter = converter
+        self.json_schema = json_schema
+
+    def __call__(self, *args, **kwargs):
+        if not self.converted:
+            self.converted = self.converter(self.json_schema, lazy=False)
+        return self.converted(*args, **kwargs)
+
+
 class SchemaConverter:
     any_pass = AnyPass
     unique = Unique
@@ -253,12 +265,14 @@ class SchemaConverter:
     extra = vol.ALLOW_EXTRA
 
     @classmethod
-    def check_and_convert(cls, json_schema):
+    def check_and_convert(cls, json_schema, lazy=True):
         schema_schema(json_schema)
-        return cls.convert(json_schema)
+        return cls.convert(json_schema, lazy)
 
     @classmethod
-    def convert(cls, json_schema):
+    def convert(cls, json_schema, lazy=True):
+        if lazy:
+            return LazySchema(cls.convert, json_schema)
         return vol.Schema(cls.go(json_schema))
 
     @classmethod

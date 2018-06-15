@@ -836,7 +836,7 @@ class Test(unittest.TestCase):
                     {'type': 'integer', 'multipleOf': 2},
                     {'type': 'number', 'minimum': 10},
                 ],
-                'default': 'default'
+                'default': 10
             },
         },
         'required': ['one', 'two']
@@ -862,7 +862,7 @@ class Test(unittest.TestCase):
         }), {
             'one': '12345',
             'two': [{'a': 7, 'b': 1}, {'a': 7, 'b': 'abc2'}],
-            'three': 'default',
+            'three': 10,
         })
 
     def test3(self):
@@ -883,7 +883,7 @@ class Test(unittest.TestCase):
         }), {
             'one': '12345',
             'two': [{'a': 7, 'b': 1}, {'a': 7, 'b': 'abc2'}],
-            'three': 'default',
+            'three': 10,
             'extra': 'extra',
         })
 
