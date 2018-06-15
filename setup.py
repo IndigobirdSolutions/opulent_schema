@@ -16,7 +16,7 @@ setup(
     extras_require={
         'schemalchemy': [
             'Delorean>=0.5.0',
-            'sqlalchemy',
+            'sqlalchemy~=1.1.9',
         ],
     },
 )
