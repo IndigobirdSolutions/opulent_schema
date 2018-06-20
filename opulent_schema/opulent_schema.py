@@ -62,6 +62,18 @@ class Equalizer:
         return 'Equalizer({})'.format(self.expected)
 
 
+class In(vol.In):
+
+    def __init__(self, container):
+        super().__init__(container)
+
+    def __call__(self, v):
+        try:
+            return super().__call__(v)
+        except vol.InInvalid:
+            raise vol.InInvalid('{} not in {}'.format(v, self.container))
+
+
 def sorted_dict_items(dict_):
     if isinstance(dict_, collections.OrderedDict):
         return dict_.items()
@@ -306,7 +318,7 @@ class SchemaConverter:
             validators.append(Equalizer(schema['const']))
 
         if 'enum' in schema:
-            validators.append(vol.In(schema['enum']))
+            validators.append(In(schema['enum']))
 
         if schema.get('not'):
             validators.append(cls.not_(cls.go(schema['not'])))
