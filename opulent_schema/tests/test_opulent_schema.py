@@ -797,7 +797,7 @@ class Test(unittest.TestCase):
             'number_validators',
             'string_validators',
             'array_validators',
-            vol.Any(opulent_schema.type_mapping['integer'], numbers.Number),
+            vol.Any(opulent_schema.SchemaConverter.type_mapping['integer'], numbers.Number),
             vol.All(str, dict),
             opulent_schema.OneOf(list, dict),
             opulent_schema.Equalizer(17),

@@ -19,17 +19,6 @@ class IntegralNumber:
         raise vol.Invalid('Not an integral number')
 
 
-type_mapping = {
-    'string': str,
-    'integer': IntegralNumber(),
-    'number': numbers.Number,
-    'boolean': bool,
-    'null': None,
-    'object': dict,
-    'array': list,
-}
-
-
 class Not:
     def __init__(self, schema):
         self.validator = schema
@@ -276,6 +265,16 @@ class SchemaConverter:
 
     extra = vol.ALLOW_EXTRA
 
+    type_mapping = {
+        'string': str,
+        'integer': IntegralNumber(),
+        'number': numbers.Number,
+        'boolean': bool,
+        'null': None,
+        'object': dict,
+        'array': list,
+    }
+
     @classmethod
     def check_and_convert(cls, json_schema, lazy=True):
         schema_schema(json_schema)
@@ -296,11 +295,11 @@ class SchemaConverter:
         validators = []
         if schema.get('type'):
             if isinstance(schema['type'], list) and len(schema['type']) > 1:
-                validators.append(vol.Any(*[type_mapping[t] for t in schema['type']]))
+                validators.append(vol.Any(*[cls.type_mapping[t] for t in schema['type']]))
             elif isinstance(schema['type'], list):
-                validators.append(type_mapping[schema['type'][0]])
+                validators.append(cls.type_mapping[schema['type'][0]])
             else:  # i.e. isinstance(schema['type'], str)
-                validators.append(type_mapping[schema['type']])
+                validators.append(cls.type_mapping[schema['type']])
 
         validators.extend(cls.object_validators(schema))
         validators.extend(cls.number_validators(schema))
@@ -550,7 +549,9 @@ def make_schema_schema(extra):
         vol.Optional('propertyNames'): schema_within_schema,
         vol.Optional('enum'): vol.All(list, Unique(), vol.Length(min=1)),
         vol.Optional('const'): object,
-        vol.Optional('type'): vol.Any(vol.In(frozenset(type_mapping.keys())), [vol.In(frozenset(type_mapping.keys()))]),
+        vol.Optional('type'):
+            vol.Any(vol.In(frozenset(SchemaConverter.type_mapping.keys())),
+                    [vol.In(frozenset(SchemaConverter.type_mapping.keys()))]),
         vol.Optional('allOf'): vol.All([schema_within_schema], vol.Length(min=1)),
         vol.Optional('anyOf'): vol.All([schema_within_schema], vol.Length(min=1)),
         vol.Optional('oneOf'): vol.All([schema_within_schema], vol.Length(min=1)),
