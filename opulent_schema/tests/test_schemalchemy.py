@@ -27,7 +27,7 @@ class TestTableOrm(Base):
     integer = sqlalchemy.Column(sqlalchemy.INTEGER, primary_key=True)
     uuid = sqlalchemy.Column(sqlalchemy.dialects.postgresql.UUID)
     timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP)
-    json = sqlalchemy.Column(sqlalchemy.dialects.postgresql.json.JSON)
+    json = sqlalchemy.Column(sqlalchemy.JSON)
     boolean = sqlalchemy.Column(sqlalchemy.BOOLEAN, nullable=False)
     time = sqlalchemy.Column(sqlalchemy.TIME, nullable=False)
     numeric = sqlalchemy.Column(sqlalchemy.Numeric(20, 6), nullable=False)
@@ -45,7 +45,7 @@ TestTable = sqlalchemy.Table(
     sqlalchemy.Column('integer', sqlalchemy.INTEGER, primary_key=True),
     sqlalchemy.Column('uuid', sqlalchemy.dialects.postgresql.UUID),
     sqlalchemy.Column('timestamp', sqlalchemy.TIMESTAMP),
-    sqlalchemy.Column('json', sqlalchemy.dialects.postgresql.json.JSON),
+    sqlalchemy.Column('json', sqlalchemy.JSON),
     sqlalchemy.Column('boolean', sqlalchemy.BOOLEAN, nullable=False),
     sqlalchemy.Column('time', sqlalchemy.TIME, nullable=False),
     sqlalchemy.Column('numeric', sqlalchemy.Numeric(20, 6), nullable=False),

@@ -3,9 +3,13 @@ python:
   - 3.5
   - 3.6
   - pypy3
+env:
+  - SQL_ALCHEMY_VERSION=1.1.9
+  - SQL_ALCHEMY_VERSION=1.2.0
 install:
   - pip install -r test-requirements.txt
   - pip install -e .[schemalchemy]
+  - pip install --force-reinstall sqlalchemy~=$SQL_ALCHEMY_VERSION
 script:
   - flake8
   - nosetests

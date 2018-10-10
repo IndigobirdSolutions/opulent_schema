@@ -95,7 +95,7 @@ class AnyDecimal(TransformedField):
 
 sql_type_validators = {
     sa.dialects.postgresql.base.UUID: uuid_validator,
-    sa.dialects.postgresql.json.JSON: lambda col: {},
+    sqlalchemy.JSON: lambda col: {},
     sa.sql.sqltypes.Numeric: lambda col: AnyDecimal(type='number'),
     sa.sql.sqltypes.TIME: lambda col: {
         'type': 'string',
