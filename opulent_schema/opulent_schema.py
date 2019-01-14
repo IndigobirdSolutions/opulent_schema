@@ -53,9 +53,6 @@ class Equalizer:
 
 class In(vol.In):
 
-    def __init__(self, container):
-        super().__init__(container)
-
     def __call__(self, v):
         try:
             return super().__call__(v)
@@ -495,7 +492,7 @@ class TransformedField(dict):
             kwargs['description'] = description
         if default is not None:
             kwargs['default'] = default
-        super().__init__(**self.schema, **kwargs)
+        super().__init__(**{**self.schema, **kwargs})
 
     def _transform(self, instance):
         """The only error this method raises should be `vol.Invalid`"""
@@ -503,6 +500,9 @@ class TransformedField(dict):
 
     def get_transformation(self):
         return self._transform
+    
+    def copy(self):
+        return type(self)(**super().copy())
 
 
 class InLineField(TransformedField):
