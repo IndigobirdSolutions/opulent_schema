@@ -801,9 +801,9 @@ class Test(unittest.TestCase):
             vol.All(str, dict),
             opulent_schema.OneOf(list, dict),
             opulent_schema.Equalizer(17),
-            vol.In([5, None, {'a': 17}]),
+            opulent_schema.In([5, None, {'a': 17}]),
             opulent_schema.Not(dict),
-            vol.Coerce(in_jsonschema._transform),
+            vol.Coerce(in_jsonschema._transform, msg='expected ExampleTranfromedField'),
         ), res)
 
     # integration tests:
