@@ -111,7 +111,7 @@ class Test(unittest.TestCase):
                 'a': {
                     'type': 'object',
                     'patternProperties': {
-                        '_\w*': {'type': 'string'}
+                        r'_\w*': {'type': 'string'}
                     },
                     'additionalProperties': {'type': 'integer'}
                 }
@@ -126,7 +126,7 @@ class Test(unittest.TestCase):
                     'a': {
                         'type': 'object',
                         'patternProperties': {
-                            '_\w*': {'typo': 'string'}  # there's a TYPO here... get it? :)
+                            r'_\w*': {'typo': 'string'}  # there's a TYPO here... get it? :)
                         },
                         'additionalProperties': {'type': 'integer'}
                     }
@@ -134,7 +134,7 @@ class Test(unittest.TestCase):
             })
         self.assertEqual(
             str(exception_info.exception),
-            "extra keys not allowed @ data['properties']['a']['patternProperties']['_\\\w*']['typo']"
+            "extra keys not allowed @ data['properties']['a']['patternProperties']['_\\\w*']['typo']"  # noqa: W605
         )
 
     def test_get_length_no_nothing(self):
@@ -707,7 +707,7 @@ class Test(unittest.TestCase):
             vol.Schema(opulent_schema.FullPropertiesSchema(
                 lambda x: x,
                 {
-                    '\w?b': vol.Coerce(lambda x: x + 'b'),
+                    r'\w?b': vol.Coerce(lambda x: x + 'b'),
                     'a': vol.Coerce(lambda x: x + 'a'),
                 },
                 vol.Coerce(lambda x: x + 'x'),

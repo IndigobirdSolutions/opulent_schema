@@ -471,7 +471,7 @@ class SchemaConverter:
             'ipv4': ext_validators.IP(4),
             'ipv6': ext_validators.IP(6),
             # regex from: https://tools.ietf.org/html/rfc3986#appendix-B
-            'uri': vol.Match('^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?'),
+            'uri': vol.Match(r'^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?'),
         }.get(format, object)
 
 
@@ -500,7 +500,7 @@ class TransformedField(dict):
 
     def get_transformation(self):
         return self._transform
-    
+
     def copy(self):
         return type(self)(**super().copy())
 
