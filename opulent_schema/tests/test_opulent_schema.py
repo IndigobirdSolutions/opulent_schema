@@ -1,4 +1,5 @@
 import contextlib
+import functools
 import numbers
 import unittest
 from unittest import mock
@@ -6,7 +7,6 @@ from unittest import mock
 import voluptuous as vol
 
 import opulent_schema
-
 
 all_schema_keys = {
     'multipleOf',
@@ -63,10 +63,12 @@ def comparator(attr_names):
                 return False
 
         return True
+
     return _eq_method
 
 
 def patch_comparing_meths(func):
+    @functools.wraps(func)
     def _test_method(*args, **kwargs):
         with contextlib.ExitStack() as stack:
             for cls, attrs in [
@@ -78,7 +80,7 @@ def patch_comparing_meths(func):
                 (vol.Optional, ['schema', 'default']),
                 (vol.Required, ['schema']),
                 (vol.Schema, ['schema', 'required', 'extra']),
-                (vol.Coerce, ['type']),
+                (vol.Coerce, ['type', 'msg']),
                 (vol.In, ['container']),
                 (vol.Msg, ['schema', 'msg']),
                 (opulent_schema.ExtendedExactSequence, ['validators']),
@@ -98,6 +100,7 @@ def patch_comparing_meths(func):
             stack.enter_context(mock.patch.object(vol.Match, '__hash__', new=lambda self: hash(self.pattern)))
             stack.enter_context(mock.patch.object(vol.All, '__hash__', new=lambda self: hash(repr(self))))
             return func(*args, **kwargs)
+
     return _test_method
 
 
@@ -459,6 +462,7 @@ class Test(unittest.TestCase):
                 vol.Schema({vol.Match('re2'): 'some other schema'}, extra=vol.ALLOW_EXTRA),
                 vol.Schema({vol.Match('re3'): 'yet another schema'}, extra=vol.ALLOW_EXTRA),
             ]
+
         input_schema = example_schema({
             'properties': {
                 'a': {'key': 1, 'default': -17},
@@ -485,20 +489,20 @@ class Test(unittest.TestCase):
     @patch_comparing_meths
     def test_object_validators_full_package(self, df, go):
         input_schema = example_schema({
-                'properties': {
-                    'a': {'key': 1, 'default': -17},
-                    'b': {'key': 2},
-                    'c': {'key': 3},
-                },
-                'patternProperties': {
-                    're1': 'some schema',
-                    're2': 'some other schema',
-                    're3': 'yet another schema',
-                },
-                'additionalProperties': {'schema': 'of additionalProperties'},
-                'required': ['b', 'd'],
-                'type': ['object']
-            }, leave_out=['dependencies', 'propertyNames'])
+            'properties': {
+                'a': {'key': 1, 'default': -17},
+                'b': {'key': 2},
+                'c': {'key': 3},
+            },
+            'patternProperties': {
+                're1': 'some schema',
+                're2': 'some other schema',
+                're3': 'yet another schema',
+            },
+            'additionalProperties': {'schema': 'of additionalProperties'},
+            'required': ['b', 'd'],
+            'type': ['object']
+        }, leave_out=['dependencies', 'propertyNames'])
         expected_result = [
             vol.Schema({
                 vol.Required('b'): {'key': 2},
@@ -770,19 +774,20 @@ class Test(unittest.TestCase):
         self.assertEqual(res, vol.Any(dict, str))
 
     @mock.patch.object(opulent_schema.SchemaConverter, 'object_validators',
-                       side_effect=[['object_validators']] + [[]]*100)
+                       side_effect=[['object_validators']] + [[]] * 100)
     @mock.patch.object(opulent_schema.SchemaConverter, 'number_validators',
-                       side_effect=[['number_validators']] + [[]]*100)
+                       side_effect=[['number_validators']] + [[]] * 100)
     @mock.patch.object(opulent_schema.SchemaConverter, 'string_validators',
-                       side_effect=[['string_validators']] + [[]]*100)
+                       side_effect=[['string_validators']] + [[]] * 100)
     @mock.patch.object(opulent_schema.SchemaConverter, 'array_validators',
-                       side_effect=[['array_validators']] + [[]]*100)
+                       side_effect=[['array_validators']] + [[]] * 100)
     @patch_comparing_meths
     def test_go_idunno(self, array_validators, string_validators, number_validators, object_validators):
 
         class ExampleTranfromedField(opulent_schema.TransformedField):
             def _transform(self, instance):
                 pass
+
         in_jsonschema = ExampleTranfromedField(**{
             'anyOf': [{'type': 'integer'}, {'type': 'number'}],
             'allOf': [{'type': 'string'}, {'type': 'object'}],
@@ -803,9 +808,50 @@ class Test(unittest.TestCase):
             opulent_schema.Equalizer(17),
             opulent_schema.In([5, None, {'a': 17}]),
             opulent_schema.Not(dict),
-            vol.Coerce(in_jsonschema._transform, msg='expected ExampleTranfromedField'),
+            vol.Coerce(in_jsonschema._post_transform, msg='ExampleTranfromedField post_transformation failed'),
         ), res)
 
+    @mock.patch.object(opulent_schema.SchemaConverter, 'object_validators',
+                       side_effect=[['object_validators']] + [[]] * 100)
+    @mock.patch.object(opulent_schema.SchemaConverter, 'number_validators',
+                       side_effect=[['number_validators']] + [[]] * 100)
+    @mock.patch.object(opulent_schema.SchemaConverter, 'string_validators',
+                       side_effect=[['string_validators']] + [[]] * 100)
+    @mock.patch.object(opulent_schema.SchemaConverter, 'array_validators',
+                       side_effect=[['array_validators']] + [[]] * 100)
+    @patch_comparing_meths
+    def test_go_idunno_with_pre(self, array_validators, string_validators, number_validators, object_validators):
+        """ it's the one form above copied and slightly modified. I know, i know. But I'm in a hurry."""
+        class ExampleTranfromedField(opulent_schema.TransformedField):
+            def _transform(self, instance):
+                pass
+
+            def _pre_transform(self, instance):
+                pass
+
+        in_jsonschema = ExampleTranfromedField(**{
+            'anyOf': [{'type': 'integer'}, {'type': 'number'}],
+            'allOf': [{'type': 'string'}, {'type': 'object'}],
+            'oneOf': [{'type': 'array'}, {'type': 'object'}],
+            'const': 17,
+            'enum': [5, None, {'a': 17}],
+            'not': {'type': 'object'},
+        })
+        res = opulent_schema.SchemaConverter.go(in_jsonschema)
+        self.assertEqual(vol.All(
+            vol.Coerce(in_jsonschema._pre_transform, msg='ExampleTranfromedField pre_transformation failed'),
+            'object_validators',
+            'number_validators',
+            'string_validators',
+            'array_validators',
+            vol.Any(opulent_schema.SchemaConverter.type_mapping['integer'], numbers.Number),
+            vol.All(str, dict),
+            opulent_schema.OneOf(list, dict),
+            opulent_schema.Equalizer(17),
+            opulent_schema.In([5, None, {'a': 17}]),
+            opulent_schema.Not(dict),
+            vol.Coerce(in_jsonschema._post_transform, msg='ExampleTranfromedField post_transformation failed'),
+        ), res)
     # integration tests:
 
     testing_schema = {
@@ -841,6 +887,25 @@ class Test(unittest.TestCase):
         },
         'required': ['one', 'two']
     }
+
+    def test_pre_and_post(self):
+
+        class IncreaseNumber(opulent_schema.TransformedField):
+
+            def _pre_transform(self, instance):
+                return int(float(instance))
+
+            def _post_transform(self, instance):
+                return instance + 1
+
+        self.assertEqual(opulent_schema.exact_check_and_convert({
+            'type': 'object',
+            'properties': {
+                'a': IncreaseNumber(type='integer')
+            }
+        })({'a': '7.5'}), {
+            'a': 8,
+        })
 
     def test1(self):
 
@@ -1154,3 +1219,19 @@ class Test(unittest.TestCase):
                 'uri': 'ftp://ftp.wikipedia.org'
             }
         )
+
+
+class TestUngettable(unittest.TestCase):
+    maxDiff = None
+
+    def test_get_before_overriding(self):
+        t = opulent_schema.TransformedField()
+        with self.assertRaises(opulent_schema.UnGettableError):
+            t.get_pre_transformation()
+
+    def test_get_after_overriding(self):
+        class Overriden(opulent_schema.TransformedField):
+            def _pre_transform(self, instance):
+                pass
+
+        Overriden().get_pre_transformation()

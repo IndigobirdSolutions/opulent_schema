@@ -320,7 +320,15 @@ class SchemaConverter:
             validators.append(cls.not_(cls.go(schema['not'])))
 
         if isinstance(schema, TransformedField):
-            validators.append(vol.Coerce(schema.get_transformation(), msg='expected {}'.format(type(schema).__name__)))
+            try:
+                pre_transformation = schema.get_pre_transformation()
+            except UnGettableError:
+                pass
+            else:
+                validators.insert(0, vol.Coerce(pre_transformation, msg=f'{type(schema).__name__} '
+                                                                        f'pre_transformation failed'))
+            validators.append(vol.Coerce(schema.get_post_transformation(),
+                                         msg=f'{type(schema).__name__} post_transformation failed'))
         if not validators:
             validators = [object]
 
@@ -481,7 +489,24 @@ class ExactSchemaConverter(SchemaConverter):
     extra = vol.PREVENT_EXTRA
 
 
+class UnGettableError(Exception):
+    pass
+
+
+class UnGettableMethod:
+
+    def __init__(self, _):
+        pass
+
+    def __get__(self, instance, owner):
+        raise UnGettableError('Override this method to get it')
+
+
 class TransformedField(dict):
+    """A magical dict, that allows for arbitrary transformations of validated data:
+    _post_transform - mandatory, applied to data after json-schema-validating
+    _pre_transform - optional, applied to data before json-schema-validating
+    """
 
     schema = {}
 
@@ -498,8 +523,21 @@ class TransformedField(dict):
         """The only error this method raises should be `vol.Invalid`"""
         raise NotImplementedError
 
+    @UnGettableMethod
+    def _pre_transform(self, instance):
+        raise NotImplementedError
+
+    def _post_transform(self, instance):
+        return self._transform(instance)
+
     def get_transformation(self):
-        return self._transform
+        return self._post_transform
+
+    def get_post_transformation(self):
+        return self.get_transformation()
+
+    def get_pre_transformation(self):
+        return self._pre_transform
 
     def copy(self):
         return type(self)(**super().copy())
@@ -510,7 +548,7 @@ class InLineField(TransformedField):
         super().__init__(*args, **kwargs)
         self.transformation = transformation
 
-    def get_transformation(self):
+    def get_post_transformation(self):
         return self.transformation
 
 

@@ -203,7 +203,7 @@ class Properties:
             nullable = column.nullable
         self.nullable = nullable
         self.column = column
-        for kw, kw_name in[
+        for kw, kw_name in [
             (title, 'title'),
             (description, 'description'),
             (default, 'default'),
